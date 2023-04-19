@@ -16,22 +16,23 @@
             android:text="Exercise"
             android:textSize="18sp"
             android:textStyle="bold"/>
-
-        <Spinner
-            android:id="@+id/exercise_spinner"
-            android:layout_width="314dp"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="+"
-            android:id="@+id/AddExerciseBtn"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/idTV"
-            android:text="+"/>
+            android:orientation="horizontal">
+            <Spinner
+                android:id="@+id/exercise_spinner"
+                android:layout_width="314dp"
+                android:layout_height="wrap_content" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+"
+                android:id="@+id/AddExerciseBtn"/>
+        </LinearLayout>
+
+
 
         <TextView
             android:layout_width="wrap_content"

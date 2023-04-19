@@ -9,7 +9,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "Kalista.db";
@@ -132,15 +134,66 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.insert(TABLE_WORKOUT, null, values);
        db.close();
 
+    }
 
-//        Exercise exercise = new Exercise(user_id, name, isCardio, description);
-//        SQLiteDatabase db = this.getWritableDatabase();
-//        ContentValues values = new ContentValues();
-//        values.put(COLUMN_EXERCISE_NAME, exercise.getName());
-//        values.put(COLUMN_ISCARDIO, exercise.getIsCardio());
-//        values.put(COLUMN_EXERCISE_DESCRIPTION, exercise.getDescription());
-//        values.put(COLUMN_USER_ID, exercise.getUser_id());
-//        db.insert(TABLE_EXERCISES, null, values);
+    public Map<String, Integer> getRepetitionsForExercise(int exercise_id, int user_id) {
+        String exerciseName = getExerciseNameById(exercise_id);
+        SQLiteDatabase db = this.getReadableDatabase();
+        Map<String, Integer> repetitionsMap = new HashMap<>();
+        String[] columns = {"workout.date", "workout.reps", "workout.sets"};
+        String selection = "exercises.name = ? AND users.user_id = ? AND exercises.isCardio = ?";
+        String[] selectionArgs = {exerciseName, String.valueOf(user_id), "0"};
+        String tables = "workout JOIN exercises ON workout.exercise_id = exercises.exercise_id JOIN users ON workout.user_id = users.user_id";
+        Cursor cursor = db.query(tables, columns, selection, selectionArgs, null, null, null);
+        if(cursor.moveToFirst()){
+            do{
+                String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DATE));
+                int sets = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SETS));
+                int repetitions = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_REPS));
+                int previousRepetitions = repetitionsMap.getOrDefault(date, 0);
+                repetitionsMap.put(date, previousRepetitions + (sets * repetitions));
+            } while(cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return repetitionsMap;
+    }
+
+    public Map<String, Integer> getTimeSpentForCardioExercise(int exercise_id, int user_id){
+        String exerciseName = getExerciseNameById(exercise_id);
+        SQLiteDatabase db = this.getReadableDatabase();
+        Map<String, Integer> timeSpentMap = new HashMap<>();
+        String[] columns = {"workout.date", "workout.timeSpentSec"};
+        String selection = "exercises.name = ? AND users.user_id = ? AND exercises.isCardio = ?";
+        String[] selectionArgs = {exerciseName, String.valueOf(user_id), "1"};
+        String tables = "workout JOIN exercises On workout.exercise_id = exercises.exercise_id JOIN users On workout.user_id = users.user_id";
+        Cursor cursor = db.query(tables, columns, selection, selectionArgs, null, null, null);
+        if(cursor.moveToFirst()){
+            do{
+                String date = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DATE));
+                int timeSpent = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_TIMESPENT_INSECONDS));
+                int previousTimeSpent = timeSpentMap.getOrDefault(date, 0);
+                timeSpentMap.put(date, previousTimeSpent + timeSpent);
+            } while(cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+        return timeSpentMap;
+    }
+
+
+
+    public void insertCardioWorkout(int exercise_id, int timeSpentSec, int user_id){
+        Workout workout = new Workout(user_id, exercise_id, timeSpentSec);
+        SQLiteDatabase db = getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_EXERCISE_ID, exercise_id);
+        values.put(COLUMN_TIMESPENT_INSECONDS, timeSpentSec);
+        values.put(COLUMN_DATE, getCurrentDate());
+        values.put(COLUMN_TIME, getCurrentTime());
+        values.put(COLUMN_USER_ID, user_id);
+        db.insert(TABLE_WORKOUT, null, values);
+        db.close();
     }
 
 
@@ -176,6 +229,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return exerciseId;
+    }
+
+    public String getExerciseNameById(int id) {
+        SQLiteDatabase db = getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT name FROM exercises WHERE exercise_id=?", new String[]{String.valueOf(id)});
+        String name = "";
+        if (cursor.moveToFirst()) {
+            name = cursor.getString(cursor.getColumnIndexOrThrow("name"));
+        }
+        cursor.close();
+        db.close();
+        return name;
     }
 
 
